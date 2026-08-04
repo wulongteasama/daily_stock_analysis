@@ -13,7 +13,7 @@ jobs:
     steps:
       - name: Probe executor endpoints once
         env:
-          BASE_URL: https://agent-v1135-cloudflare-executor-20260804-private-finance-calendar.q619820895.workers.dev
+          BASE_URL: https://agent-ai-software-pltr-ddog-20260804-private-finance-calendar.q619820895.workers.dev
         run: |
           set -u
           for path in /recovery/status.json /recovery/private-finance-calendar-updated.zip /recovery/ping.json /version.json; do
