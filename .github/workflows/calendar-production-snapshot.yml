@@ -1,0 +1,63 @@
+name: Calendar production snapshot
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download deployed calendar data
+        env:
+          BASE_URL: https://private-finance-calendar.q619820895.workers.dev
+        run: |
+          set -euo pipefail
+          mkdir -p snapshot
+          curl -fL "$BASE_URL/offline/personal_finance_calendar_current.html" -o snapshot/personal_finance_calendar_current.html
+          python3 - <<'PY'
+          import json, os, pathlib, urllib.parse, urllib.request
+          base=os.environ['BASE_URL'].rstrip('/')+'/'
+          root=pathlib.Path('snapshot/site')
+          root.mkdir(parents=True,exist_ok=True)
+          queue=['version.json','runtime/runtime_manifest.json','runtime/home.json']
+          seen=set()
+          while queue:
+              rel=queue.pop(0).lstrip('/')
+              if rel in seen: continue
+              seen.add(rel)
+              url=urllib.parse.urljoin(base,rel)
+              try:
+                  with urllib.request.urlopen(url,timeout=30) as r:
+                      data=r.read()
+              except Exception as exc:
+                  print('skip',rel,repr(exc)); continue
+              out=root/rel
+              out.parent.mkdir(parents=True,exist_ok=True)
+              out.write_bytes(data)
+              if rel.endswith('.json'):
+                  try: payload=json.loads(data)
+                  except Exception: continue
+                  stack=[payload]
+                  while stack:
+                      v=stack.pop()
+                      if isinstance(v,dict): stack.extend(v.values())
+                      elif isinstance(v,list): stack.extend(v)
+                      elif isinstance(v,str):
+                          s=v.strip()
+                          if s.endswith('.json') and ('runtime/' in s or s.startswith('/runtime/') or s.startswith('data/')):
+                              queue.append(s.lstrip('/'))
+          print('downloaded',len(seen),'runtime paths')
+          PY
+          (cd snapshot && zip -qr ../private-finance-calendar-production.zip .)
+          unzip -t private-finance-calendar-production.zip
+      - name: Upload production snapshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: private-finance-calendar-production
+          path: private-finance-calendar-production.zip
+          if-no-files-found: error
+          retention-days: 1
