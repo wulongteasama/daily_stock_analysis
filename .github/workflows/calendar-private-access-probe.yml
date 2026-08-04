@@ -13,7 +13,7 @@ jobs:
     steps:
       - name: Fetch validated output
         env:
-          BASE_URL: https://agent-v1135-cloudflare-executor-20260804-private-finance-calendar.q619820895.workers.dev
+          BASE_URL: https://agent-ai-software-pltr-ddog-20260804-private-finance-calendar.q619820895.workers.dev
         run: |
           set -euo pipefail
           for attempt in $(seq 1 90); do
