@@ -1,0 +1,24 @@
+name: Calendar executor diagnostic
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Probe executor endpoints once
+        env:
+          BASE_URL: https://agent-v1135-cloudflare-executor-20260804-private-finance-calendar.q619820895.workers.dev
+        run: |
+          set -u
+          for path in /recovery/status.json /recovery/private-finance-calendar-updated.zip /recovery/ping.json /version.json; do
+            echo "=== $path ==="
+            curl -L -sS -D headers.txt -o body.bin -w 'HTTP=%{http_code} TYPE=%{content_type} SIZE=%{size_download}\n' "$BASE_URL$path" || true
+            sed -n '1,20p' headers.txt || true
+            if [[ "$path" == *.json ]]; then head -c 1000 body.bin || true; echo; fi
+          done
