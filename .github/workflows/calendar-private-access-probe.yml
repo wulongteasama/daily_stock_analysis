@@ -16,7 +16,7 @@ jobs:
           BASE_URL: https://agent-v1135-cloudflare-executor-20260804-private-finance-calendar.q619820895.workers.dev
         run: |
           set -euo pipefail
-          for attempt in $(seq 1 60); do
+          for attempt in $(seq 1 90); do
             scode=$(curl -L -sS -o status.json -w '%{http_code}' "$BASE_URL/recovery/status.json" || true)
             zcode=$(curl -L -sS -o private-finance-calendar-updated.zip -w '%{http_code}' "$BASE_URL/recovery/private-finance-calendar-updated.zip" || true)
             if [ "$scode" = "200" ] && python3 -m json.tool status.json >/dev/null 2>&1 && [ "$zcode" = "200" ] && unzip -t private-finance-calendar-updated.zip >/dev/null 2>&1; then
